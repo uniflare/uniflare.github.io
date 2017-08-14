@@ -1,5 +1,5 @@
-title: Slate theme
-description: Slate is a theme for GitHub Pages.
-show_downloads: true
-google_analytics:
+title: Jeremy 'uniflare' Wade
+description: github portfolio
+show_downloads: false
+google_analytics: false
 theme: jekyll-theme-slate

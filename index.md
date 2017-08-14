@@ -2,122 +2,128 @@
 layout: default
 ---
 
-Text can be **bold**, _italic_, or ~~strikethrough~~.
+Welcome to my github pages portfolio, here you will find a summary of some of my open source programming projects.
 
-[Link to another page](another-page).
+# [](#header-1)Who am I?
 
-There should be whitespace between paragraphs.
+My name is Jeremy Wade (pseudonym uniflare), an enthusiastic coder from the UK that loves creating and fixing things - nothing brings me more happiness than helping someone smile. 
+I started writing html after I got interested in the source code behind my favourite websites, at the time these related to the "Delta Force" series of games back from 2000 (being 11 at the time). 
+PHP naturally followed this interest in website programming and I was hooked. Eventually writing applications in several other languages to solve problems I had or to make mine or someone elses life easier - usually small projects, solo. 
+It was always 'Just a hobby', something in my down-time, something to relax with or get stuck into, something I could solve problems with, make a difference to someone - or myself.
+ 
+Fast forward around 16 years, I get an interest in C++ programming (I always wanted to learn C or C++ but it was a 'mystical' language to me back then dealing with compilers etc - php just worked for me). 
+I make the decision to finally learn C++ (the 'ultimate' language - my thoughts at the time). Wrote some simple snippets, experimented, just played around... then comes CRYENGINE, I heard people say it is the most difficult engine to master, that the code is hard to understand.
+Perfect! CRYENGINE - the most visually stunning and ground breaking engine of the Crysis series - time to see what the fuss is about!
 
-There should be whitespace between paragraphs. We recommend including a README, or a file with information about your project.
-
-# [](#header-1)Header 1
-
-This is a normal paragraph following a header. GitHub is a code hosting platform for version control and collaboration. It lets you and others work together on projects from anywhere.
-
-## [](#header-2)Header 2
-
-> This is a blockquote following a header.
->
-> When something is important enough, you do it even if the odds are not in your favor.
-
-### [](#header-3)Header 3
-
-```js
-// Javascript code with syntax highlighting.
-var fun = function lang(l) {
-  dateformat.i18n = require('./lang/' + l)
-  return true;
-}
-```
-
-```ruby
-# Ruby code with syntax highlighting
-GitHubPages::Dependencies.gems.each do |gem, version|
-  s.add_dependency(gem, "= #{version}")
-end
-```
-
-#### [](#header-4)Header 4
-
-*   This is an unordered list following a header.
-*   This is an unordered list following a header.
-*   This is an unordered list following a header.
-
-##### [](#header-5)Header 5
-
-1.  This is an ordered list following a header.
-2.  This is an ordered list following a header.
-3.  This is an ordered list following a header.
-
-###### [](#header-6)Header 6
-
-| head1        | head two          | three |
-|:-------------|:------------------|:------|
-| ok           | good swedish fish | nice  |
-| out of stock | good and plenty   | nice  |
-| ok           | good `oreos`      | hmm   |
-| ok           | good `zoute` drop | yumm  |
-
-### There's a horizontal rule below this.
+I have become more and more of a regular cryengine community member for the better part of a year now and I am thoroughly enjoying my time.
 
 * * *
 
-### Here is an unordered list:
+### [](#header-3)CRYENGINE V - Splash Screen Plugin
+![Splash Screen Plugin for CRYENGINE 5.3](/assets/images/splashplugin.jpg)
+<span id="langtag">CMake</span><span id="langtag">C++</span><br/>
+[GitHub Repository](https://github.com/uniflare/SplashExample)<br />~~[CRYENGINE Marketplace](https://www.cryengine.com/marketplace/product/splash-screen-example-plugin)~~ (Unavailable due forum account bugs, back soon)<br/>
 
-*   Item foo
-*   Item bar
-*   Item baz
-*   Item zip
+#### Goals
+- Provide a simple Splash plugin with an expanded feature-set relative to the built-in splash screen routine.
 
-### And an ordered list:
+#### Requirements
+- Simple (Drag & drop/Easy as possible)
+- Compatible (Between templates/projects in the supported engine versions)
+- Maintainable (Well documented code)
+- Robust
 
-1.  Item one
-1.  Item two
-1.  Item three
-1.  Item four
+#### Issues
+The wide compatiblity requirement did present some issues, the biggest of which involved the default profile that the GameSDK Project uses. 
+To work around the issues, I had to implement my own method of detecting whether the current profile is indeed the default profile.
 
-### And a nested list:
-
-- level 1 item
-  - level 2 item
-  - level 2 item
-    - level 3 item
-    - level 3 item
-- level 1 item
-  - level 2 item
-  - level 2 item
-  - level 2 item
-- level 1 item
-  - level 2 item
-  - level 2 item
-- level 1 item
-
-### Small image
-
-![](https://assets-cdn.github.com/images/icons/emoji/octocat.png)
-
-### Large image
-
-![](https://guides.github.com/activities/hello-world/branching.png)
-
-
-### Definition lists can be used with HTML syntax.
-
-<dl>
-<dt>Name</dt>
-<dd>Godzilla</dd>
-<dt>Born</dt>
-<dd>1952</dd>
-<dt>Birthplace</dt>
-<dd>Japan</dd>
-<dt>Color</dt>
-<dd>Green</dd>
-</dl>
-
+The most sucessfull & effective method that I found was to store a special attribute in the player profile. Since the splash plugin is supposed 
+to be loaded on the very first run, it should have primary access to the profile management system. eg.
+```cpp
+if (!m_pCurrentProfile->GetAttribute("SplashFlag_FirstRun", bSplashFlag, false))
+{
+	...
+}
 ```
-Long, single-line code blocks should not wrap. They should horizontally scroll if they are too long. This line should be long enough to demonstrate this.
-```
+I decided the risk of having this plugin added during an already released game and a user that set the lowest supported resolution was adequately low.
+A positive side-effect of this implementation appears to 'Fix' the initial default GameSDK Profile management code that deals with the user resolution settings.
 
-```
-The final element.
-```
+#### tl'dr
+ - Compatible with GameZero & GameSDK + Project templates (5.3).
+ - Plug n Play - minimal setup required.
+ - Well documented source code and revision history.
+ - Modified to meet end-user feedback (pre-splash was a suggestion).
+
+* * *
+
+### [](#header-3)CMakeGen
+![CMakeLists.txt Generator](/assets/images/cmakegen.jpg)
+<span id="langtag">CMake</span><span id="langtag">C++</span><br/>
+[GitHub Repository](https://github.com/uniflare/CMakeGen)<br/>
+
+#### Goals
+- To provide a simple yet effective CMakeLists.txt generator based on the source root folder/file structure.
+
+#### Requirements
+- Drag & Drop (Project Source Root)
+- Double-click (Look for "Code" sub folder)
+- Adaptable (Generates a modifiable Root CMakelists Template file)
+- Maintainable
+- Robust
+
+* * *
+
+### [](#header-3)Arma 2/3 - Server Keepalive Batch Tools
+![Server Keepalive Batch Tools](/assets/images/skbt.jpg)
+<span id="langtag">BatchFile</span><span id="langtag">C#</span><br/>
+[GitHub Repository](https://github.com/uniflare/skbtforarma)<br/>
+
+#### Goals
+ - Initially to provide administration relief and improve the admins QOL regarding a dedicated arma 2 server by:
+	- OneClick (or doubleclick) Start/Stop/Restart of a server instance
+	- Easy server version synchronisation
+	- Auto restart on crash/exit
+	- Realtime logging/continuous console output for monitoring
+	- Integration with the server (start/stop/restart routines)
+	- Manual control via provided start/stop/restart etc batch files.
+	
+ - Expanded to create a more modular system over time by:
+	- Creating a C# install manager that can handle multiple installations on the same machine.
+	- The new application can also control the batch script via provided batch files you can execute.
+	- Making the system open-source on github
+	- Adapted to Arma 3 from Arma 2
+ 
+#### Requirements
+- Easy installation management (Installer created for this purpose)
+- Easy to congigure and use
+- Core system entirely in BatchFile (Requirement from current admins)
+- Modular (Batch can be difficult to keep organised, common routines were separated into separate files)
+
+#### Issues
+The buggest issues were the batch scripting itself, learning the intricacies of windows Batch File (or.. 'Modern DOS') was an interesting experience.
+Definitely not reccommended to use batch for this kind of advanced functionality but it works.
+
+#### tl'dr
+ - Compatible with GameZero & GameSDK + Project templates (5.3).
+ - Plug n Play - minimal setup required.
+ - Well documented source code and revision history.
+ - Modified to meet end-user feedback (pre-splash was a suggestion).
+ 
+* * *
+
+### [](#header-3)Contribution - CE Tools
+<span id="langtag">Python</span><br/>
+[GitHub Repository](https://github.com/patsytau/ce_tools)<br/>
+
+#### Purpose of script
+To provide an easy alternative for new CE developers to quickly package a development build of their game to pass to users without, for example, the engine, or launcher to run and test the game.
+
+#### Purpose of contribution
+- To fix incompatiblity with new CE Versions
+- To maximize compatiblity (Newer & Older CE Versions)
+
+* * *
+
+### [](#header-3)Activity - CRYENGINE Forums
+[Getting Started with CE guides](https://forum.cryengine.com/viewtopic.php?f=11&t=66)<br />
+[Forum Profile](https://forum.cryengine.com/memberlist.php?mode=viewprofile&u=83036)
