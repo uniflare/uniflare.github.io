@@ -2,20 +2,20 @@
 layout: default
 ---
 
-Welcome to my github pages portfolio, here you will find a summary of some of my open source programming projects.
+Welcome to my GitHub pages portfolio, here you will find a summary of some of my open source programming projects.
 
 # [](#header-1)Who am I?
 
 My name is Jeremy Wade (pseudonym uniflare), an enthusiastic coder from the UK that loves creating and fixing things - nothing brings me more happiness than helping someone smile. 
 I started writing html after I got interested in the source code behind my favourite websites, at the time these related to the "Delta Force" series of games back from 2000 (being 11 at the time). 
-PHP naturally followed this interest in website programming and I was hooked. Eventually writing applications in several other languages to solve problems I had or to make mine or someone elses life easier - usually small projects, solo. 
+PHP naturally followed this interest in website programming and I was hooked. Eventually writing applications in several other languages to solve problems I had or to make mine or someone else' life easier - usually small projects, solo. 
 It was always 'Just a hobby', something in my down-time, something to relax with or get stuck into, something I could solve problems with, make a difference to someone - or myself.
  
-Fast forward around 16 years, I get an interest in C++ programming (I always wanted to learn C or C++ but it was a 'mystical' language to me back then dealing with compilers etc - php just worked for me). 
+Fast forward around 16 years, I get an interest in C++ programming (I always wanted to learn C or C++ but it was a 'mystical' language to me back then dealing with compilers etc - PHP just worked for me). 
 I make the decision to finally learn C++ (the 'ultimate' language - my thoughts at the time). Wrote some simple snippets, experimented, just played around... then comes CRYENGINE, I heard people say it is the most difficult engine to master, that the code is hard to understand.
-Perfect! CRYENGINE - the most visually stunning and ground breaking engine of the Crysis series - time to see what the fuss is about!
+Perfect! CRYENGINE - the most visually stunning and ground breaking engine from the Crysis series - time to see what the fuss is about!
 
-I have become more and more of a regular cryengine community member for the better part of a year now and I am thoroughly enjoying my time.
+I have become more and more of a regular CRYENGINE  community member for the better part of a year now and I am thoroughly enjoying my time.
 
 * * *
 
@@ -34,11 +34,11 @@ I have become more and more of a regular cryengine community member for the bett
 - Robust
 
 #### Issues
-The wide compatiblity requirement did present some issues, the biggest of which involved the default profile that the GameSDK Project uses. 
+The wide compatibility requirement did present some issues, the biggest of which involved the default profile that the GameSDK Project uses. 
 To work around the issues, I had to implement my own method of detecting whether the current profile is indeed the default profile.
 
-The most sucessfull & effective method that I found was to store a special attribute in the player profile. Since the splash plugin is supposed 
-to be loaded on the very first run, it should have primary access to the profile management system. eg.
+The most successful & effective method that I found was to store a special attribute in the player profile. Since the splash plugin is supposed 
+to be loaded on the very first run, it should have primary access to the profile management system. e.g.
 ```cpp
 if (!m_pCurrentProfile->GetAttribute("SplashFlag_FirstRun", bSplashFlag, false))
 {
@@ -79,35 +79,30 @@ A positive side-effect of this implementation appears to 'Fix' the initial defau
 [GitHub Repository](https://github.com/uniflare/skbtforarma)<br/>
 
 #### Goals
- - Initially to provide administration relief and improve the admins QOL regarding a dedicated arma 2 server by:
-	- OneClick (or doubleclick) Start/Stop/Restart of a server instance
+ - Initially to provide administration relief and improve the admins QOL regarding a dedicated Arma 2 server by:
+	- OneClick (or DoubleClick) Start/Stop/Restart of a server instance
 	- Easy server version synchronisation
 	- Auto restart on crash/exit
 	- Realtime logging/continuous console output for monitoring
 	- Integration with the server (start/stop/restart routines)
 	- Manual control via provided start/stop/restart etc batch files.
+	- Easy integration with a web browser based administration system.
 	
  - Expanded to create a more modular system over time by:
 	- Creating a C# install manager that can handle multiple installations on the same machine.
 	- The new application can also control the batch script via provided batch files you can execute.
-	- Making the system open-source on github
+	- Making the system open-source on GitHub
 	- Adapted to Arma 3 from Arma 2
  
 #### Requirements
 - Easy installation management (Installer created for this purpose)
-- Easy to congigure and use
+- Easy to configure and use
 - Core system entirely in BatchFile (Requirement from current admins)
-- Modular (Batch can be difficult to keep organised, common routines were separated into separate files)
+- Modular (Batch can be difficult to keep organized, common routines were separated into their own files)
 
 #### Issues
-The buggest issues were the batch scripting itself, learning the intricacies of windows Batch File (or.. 'Modern DOS') was an interesting experience.
-Definitely not reccommended to use batch for this kind of advanced functionality but it works.
-
-#### tl'dr
- - Compatible with GameZero & GameSDK + Project templates (5.3).
- - Plug n Play - minimal setup required.
- - Well documented source code and revision history.
- - Modified to meet end-user feedback (pre-splash was a suggestion).
+The biggest issues were the batch scripting itself, learning the intricacies of windows Batch File (or.. 'Modern DOS') was an interesting experience.
+Definitely not recommended to use batch for this kind of advanced functionality but it works.
  
 * * *
 
@@ -119,8 +114,8 @@ Definitely not reccommended to use batch for this kind of advanced functionality
 To provide an easy alternative for new CE developers to quickly package a development build of their game to pass to users without, for example, the engine, or launcher to run and test the game.
 
 #### Purpose of contribution
-- To fix incompatiblity with new CE Versions
-- To maximize compatiblity (Newer & Older CE Versions)
+- To fix incompatibility with new CE Versions
+- To maximise compatibility (Newer & Older CE Versions)
 
 * * *
 
