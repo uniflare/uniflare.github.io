@@ -22,7 +22,7 @@ I have become more and more of a regular CRYENGINE  community member for the bet
 ### [](#header-3)CRYENGINE V - Splash Screen Plugin
 ![Splash Screen Plugin for CRYENGINE 5.3](/assets/images/splashplugin.jpg)
 <span id="langtag">CMake</span><span id="langtag">C++</span><br/>
-[GitHub Repository](https://github.com/uniflare/SplashExample)<br />~~[CRYENGINE Marketplace](https://www.cryengine.com/marketplace/product/splash-screen-example-plugin)~~ (Unavailable due forum account bugs, back soon)<br/>
+[GitHub Repository](https://github.com/uniflare/SplashExample)<br />[CRYENGINE Marketplace](https://www.cryengine.com/marketplace/product/splash-screen-example-plugin)<br/>
 
 #### Goals
 - Provide a simple Splash plugin with an expanded feature-set relative to the built-in splash screen routine.
