@@ -1,0 +1,452 @@
+<!doctype html>
+<!--
+ @license
+ Copyright 2025 Jeremy Wade
+ SPDX-License-Identifier: Apache-2.0
+-->
+<html>
+  <head>
+    <title>Timeline Speed Mapper</title>
+    <style type="text/css">
+      /**
+      * @license
+      * Copyright 2019 Google LLC. All Rights Reserved.
+      * SPDX-License-Identifier: Apache-2.0
+      */
+      /* 
+      * Always set the map height explicitly to define the size of the div element
+      * that contains the map. 
+      */
+      #map {
+        height: 100%;
+      }
+
+      /* 
+      * Optional: Makes the sample page fill the window. 
+      */
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+    <script language="javascript">
+      let map = null;
+      let infoWindow = null;
+      let segments = [];
+      let drawnSegments = [];
+
+      function getSpeedColor(speed) {
+        if (speed < 14.0) {
+          return `rgb(0, 255, 0)`;
+        }
+        else if (speed < 28.0) {
+          return `rgb(0, 108, 255)`;
+        }
+        else if (speed < 55.6) {
+          return `rgb(255, 168, 0)`;
+        }
+        else {
+          return `rgb(255, 0, 0)`;
+        }
+      }
+
+      async function initializeEnvironment() {
+        const { Map } = await google.maps.importLibrary("maps");
+
+        Segment = class Segment {
+          constructor(lat, lng, timestamp, speed) {
+            this.lat = lat
+            this.lng = lng
+            this.timestamp = timestamp
+            this.speed = speed
+            this.polyLines = []
+          }
+        }
+        
+        SegmentPolyLine = class SegmentPolyLine extends google.maps.Polyline {
+          
+          constructor(segment, startPos, endPos, summary) {
+            super({
+              path: [ startPos, endPos ],
+              geodesic: true,
+              strokeColor: getSpeedColor(segment.speed),
+              strokeOpacity: 1.0,
+              strokeWeight: 2
+            });
+            this.segment = segment;
+            this.summary = summary;
+          }
+
+          showInfoWindow(evt) {
+            if (infoWindow != null) {
+              infoWindow.setPosition(evt.latLng);
+              infoWindow.setContent(`Speed: ${Math.floor(this.segment.speed * 3.6)} kph<br>${this.segment.timestamp}<br>${this.summary}`);
+              infoWindow.open(map);
+            }
+          }
+
+          closeInfoWindow() {
+            if (infoWindow != null) {
+              infoWindow.close();
+            }
+          }
+
+          toJSON() {
+            const points = super.getPath();
+            if (points.length != 2) {
+              print(`ERROR: points = ${points}`);
+              throw TypeError("Segment Paths must only contain start and end points. Multi point paths are not supported.");
+            }
+            const startPos = points.getAt(0);
+            const endPos = points.getAt(1);
+            return {
+              startPos: {lat: startPos.lat(), lng: startPos.lng()}, 
+              endPos: {lat: endPos.lat(), lng: endPos.lng()}, 
+              summary: this.summary
+            };
+          }
+
+        }
+      }
+
+      function haversine(pointA, pointB) {
+        const earthRadius = 6371000;
+
+        const lat1 = pointA["lat"] * (Math.PI / 180.0);
+        const lon1 = pointA["lng"] * (Math.PI / 180.0);
+        const lat2 = pointB["lat"] * (Math.PI / 180.0);
+        const lon2 = pointB["lng"] * (Math.PI / 180.0);
+        const latDelta = lat2 - lat1;
+        const lngDelta = lon2 - lon1;
+
+        const a = Math.sin(latDelta / 2)**2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(lngDelta / 2) ** 2;
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return earthRadius * c;
+      }
+
+      async function parseJsonDataSegments(jsonRaw) {
+
+        let segments = [];
+
+        const jsonData = await JSON.parse(jsonRaw);
+
+        if ("processedTimeline" in jsonData) {
+          for (let segmentData of jsonData["processedTimeline"]) {
+            const datetime = new Date(segmentData.timestamp);
+            let segment = new Segment(segmentData["lat"], segmentData["lng"], datetime, segmentData["speed"]);
+            if (segmentData["polyLines"].length > 0) {
+              for (let polyLine of segmentData["polyLines"]) {
+                await segment.polyLines.push(new SegmentPolyLine(segment, polyLine["startPos"], polyLine["endPos"], polyLine["summary"]));
+              }
+            }
+            await segments.push(segment);
+          }
+        } else if ("rawSignals" in jsonData) {
+          for (let segmentData of jsonData["rawSignals"]) {
+            if ("position" in segmentData) {
+              const positionElement = segmentData['position'];
+              const datetime = new Date(positionElement["timestamp"]);
+              const latlng = positionElement["LatLng"].split(",");
+              const point = {
+                "lat": parseFloat(latlng[0].replace(/^ \t\n\r°+| \t\n\r°+$/g, '')), 
+                "lng": parseFloat(latlng[1].replace(/^ \t\n\r°+| \t\n\r°+$/g, ''))
+              };
+              const speed = parseFloat(positionElement["speedMetersPerSecond"]);
+              await segments.push(new Segment(point["lat"], point["lng"], datetime, speed));
+            }
+          } 
+        } else if ("timelineEdits" in jsonData) {
+          for (let segmentData of jsonData["timelineEdits"]) {
+            if (!("rawSignal" in segmentData)) { continue; }
+            if (!("signal" in segmentData["rawSignal"])) { continue; }
+            if (!("position" in segmentData["rawSignal"]["signal"])) { continue; }
+            const positionElement = segmentData["rawSignal"]["signal"]["position"];
+            const datetime = new Date(positionElement["timestamp"]);
+            const lat = parseFloat(positionElement["point"]["latE7"]) / 10000000;
+            const lng = parseFloat(positionElement["point"]["lngE7"]) / 10000000;
+            const speed = parseFloat(positionElement["speedMetersPerSecond"]);
+            await segments.push(new Segment(lat, lng, datetime, speed));
+          }
+        } else {
+          for (let [time, detail] of Object.entries(jsonData)) {
+            const datetime = new Date(parseFloat(time)*1000);
+            const speed = detail["speed"];
+            await segments.push(new Segment(detail["lat"], detail["lng"], datetime, speed));
+          }
+        }
+
+        if ("semanticSegments" in jsonData) {
+          for (let segmentData of jsonData["semanticSegments"]) {
+            if (!("timelinePath" in segmentData) ||segmentData["timelinePath"].length < 2) {
+                continue;
+            }
+
+            let prev_time = null;
+            let prev_point = null;
+
+            for (let timePath of segmentData["timelinePath"]) {
+              const datetime = new Date(timePath["time"]);
+              const latlng = timePath["point"].split(",");
+              const point = {
+                "lat": parseFloat(latlng[0].replace(/^ \t\n\r°+| \t\n\r°+$/g, '')), 
+                "lng": parseFloat(latlng[1].replace(/^ \t\n\r°+| \t\n\r°+$/g, ''))
+              };
+              if (prev_time != null) {
+                if (prev_time.getDay() != datetime.getDay()) {
+                  prev_time = null;
+                  prev_point = null;
+                  continue;
+                }
+                const distance = haversine(prev_point["lat"], prev_point["lng"], point["lat"], point["lng"]);
+                const timeDelta = (datetime.getTime() - prev_time.getTime()) / 1000;
+                const speed = distance / timeDelta;
+                await segments.push(new Segment(point["lat"], point["lng"], datetime, speed));
+              }
+              prev_time = datetime;
+              prev_point = point;
+            }
+          }
+        }
+
+        return segments;
+      }
+
+      async function drawSegment(segment) {
+        const time = segment.timestamp.getTime();
+        for (const drawnSegment of drawnSegments) {
+          const drawnTime = drawnSegment.timestamp.getTime();
+          if (drawnTime == time) {
+            return;
+          }
+        }
+        if (drawnSegments.some(drawnSegment => drawnSegment.timestamp.getTime() == segment.timestamp.getTime())) {
+          return;
+        }
+
+        for (polyLine of segment.polyLines) {
+          await google.maps.event.addListener(polyLine, 'mouseover', polyLine.showInfoWindow);
+          await google.maps.event.addListener(polyLine, 'mouseout', polyLine.closeInfoWindow);
+          await polyLine.setMap(map);
+        }
+
+        await drawnSegments.push(segment);
+      }
+
+      async function drawSegments(segments) {
+        for (segment of segments) {
+          await drawSegment(segment);
+        }
+      }
+
+      async function onDirectionCalculated(segment, result, status) {
+
+        if (status == google.maps.DirectionsStatus.OK) {
+          let lastPos = null;
+          const points = result.routes[0].overview_path;
+          for (let i = 1; i < points.length; i++) {
+            let summary = result.routes[0].summary;
+            segment.polyLines.push(new SegmentPolyLine(segment, points[i - 1], points[i], summary));
+          }
+          await drawSegment(segment);
+        }
+      }
+
+      async function processSegments(directionService, segments) {
+        let segmentsRemaining = []
+        for (segment of segments) {
+          if (segment.polyLines.length == 0) {
+            segmentsRemaining.push(segment);
+          } else {
+            await drawSegment(segment);
+          }
+        }
+
+        if (segmentsRemaining.length < 2) {
+          return;
+        }
+
+        for (let i = 1; i < segments.length; i++) {
+          let lastSegment = segments[i-1];
+          let segment = segments[i];
+
+          if (segment.polyLines.length == 0) {
+            let boundRouterFunc = onDirectionCalculated.bind(undefined, segment);
+            directionService.route(
+              {
+                origin: new google.maps.LatLng(lastSegment.lat, lastSegment.lng),
+                destination: new google.maps.LatLng(segment.lat, segment.lng),
+                travelMode: google.maps.DirectionsTravelMode.DRIVING,
+                unitSystem: google.maps.UnitSystem.IMPERIAL
+              }, 
+              boundRouterFunc
+            );
+            await new Promise(r => setTimeout(r, 50));
+          }
+        }
+
+        await processSegments(directionService, segmentsRemaining);
+      }
+
+      async function makeFile(content) {
+        if (this.urlObject != undefined) {
+          window.URL.revokeObjectURL(this.urlObject);
+        }
+        var data = new Blob([content], {type: 'application/json'});
+        this.urlObject = await window.URL.createObjectURL(data);
+        return this.urlObject;
+      };
+
+      async function createImportButton() {
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.style.display = "none";
+
+        const controlButton = document.createElement("button");
+
+        // Set CSS for the control.
+        controlButton.style.backgroundColor = "#fff";
+        controlButton.style.border = "2px solid #fff";
+        controlButton.style.borderRadius = "3px";
+        controlButton.style.boxShadow = "0 2px 6px rgba(0,0,0,.3)";
+        controlButton.style.color = "rgb(25,25,25)";
+        controlButton.style.cursor = "pointer";
+        controlButton.style.fontFamily = "Roboto,Arial,sans-serif";
+        controlButton.style.fontSize = "16px";
+        controlButton.style.lineHeight = "38px";
+        controlButton.style.margin = "8px 0 22px";
+        controlButton.style.padding = "0 5px";
+        controlButton.style.textAlign = "center";
+        controlButton.textContent = "Import Data";
+        controlButton.title = "Click to import the processed data from a previous run.";
+        controlButton.type = "button";
+
+        fileInput.addEventListener('change', async function(event) {
+          const file = event.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+              segments ??= [];
+              const numSegments = segments.length;
+              segments = await mergeSegments(segments, await parseJsonDataSegments(e.target.result));
+
+              const numSegmentsAdded = segments.length - numSegments;
+              console.log(`Added ${numSegmentsAdded} segments.`);
+              await segments.sort(function(a, b) {
+                  return a.timestamp < b.timestamp;
+              });
+              await processRawSegments(segments);
+              controlButton.disabled = false;
+            };
+            await reader.readAsText(file);
+          }
+        });
+
+        controlButton.addEventListener("click", async () => {
+          controlButton.disabled = true;
+          fileInput.click();
+        });
+
+        return controlButton;
+      }
+
+      async function createExportButton() {
+        const controlButton = document.createElement("button");
+
+        // Set CSS for the control.
+        controlButton.style.backgroundColor = "#fff";
+        controlButton.style.border = "2px solid #fff";
+        controlButton.style.borderRadius = "3px";
+        controlButton.style.boxShadow = "0 2px 6px rgba(0,0,0,.3)";
+        controlButton.style.color = "rgb(25,25,25)";
+        controlButton.style.cursor = "pointer";
+        controlButton.style.fontFamily = "Roboto,Arial,sans-serif";
+        controlButton.style.fontSize = "16px";
+        controlButton.style.lineHeight = "38px";
+        controlButton.style.margin = "8px 0 22px";
+        controlButton.style.padding = "0 5px";
+        controlButton.style.textAlign = "center";
+        controlButton.textContent = "Export Data";
+        controlButton.title = "Click to download the processed data for later use.";
+        controlButton.type = "button";
+
+        controlButton.addEventListener("click", async () => {
+          const link = document.createElement('a');
+          link.href = await makeFile(JSON.stringify({"processedTimeline": segments}));
+          link.download = 'processedTimeline.json';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(link.href);
+        });
+
+        return controlButton;
+      }
+
+      async function mergeSegments(oldSegments, newSegments) {
+        if (oldSegments.length == 0) {
+          return newSegments;
+        }
+
+        let merged = [...oldSegments];
+        const predicate = (lhs, rhs) => lhs.timestamp.getTime() == rhs.timestamp.getTime();
+        await newSegments.forEach((rhs) => (merged.some((lhs) => predicate(rhs, lhs)) ? null : merged.push(rhs)))
+        return merged;
+      }
+
+      async function processRawSegments(segments) {
+        //segmentsFiltered = await segments.filter(function (segment) {
+        //  const day = segment.timestamp.getDate()
+        //  const month = segment.timestamp.getMonth()
+        //  const year = segment.timestamp.getFullYear()
+//
+        //  return year == 2025 && month < 2 &&
+        //    segment.speed > 2.0;
+        //});
+
+        let directionService = await new google.maps.DirectionsService();
+        await processSegments(directionService, segments);
+        const serializedData = await makeFile(JSON.stringify(segments));
+        const topSpeed = await Math.max.apply(null, segments.map(function (segment) { return segment.speed; }));
+        console.log(
+          `Total Segments: ${segments.length}.\n` +
+          //`Filtered Segments: ${segments.length}.\n` +
+          `Drawn Segments = ${drawnSegments.length}.\n` +
+          `Highest Speed: ${Math.floor(topSpeed * 3.6)} kph.\n`);
+      }
+
+      async function initializeMap() {
+        map = await new google.maps.Map(document.getElementById("map"), {
+          zoom: 10,
+          center: { lat: 50.110664, lng: 8.682181 },
+          mapTypeId: "terrain",
+        });
+        infoWindow = await new google.maps.InfoWindow({headerDisabled: true});
+
+        const exportButtonDiv = document.createElement("div");
+        const importButton = await createImportButton();
+        const exportButton = await createExportButton();
+        exportButtonDiv.appendChild(importButton);
+        exportButtonDiv.appendChild(exportButton);
+        map.controls[google.maps.ControlPosition.TOP_CENTER].push(exportButtonDiv);
+      }
+
+      async function initialize() {
+        await initializeEnvironment();
+        await initializeMap();
+      }
+    </script>
+    <script>
+      (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+        key: "AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg",
+        v: "weekly"
+      });
+      initialize();
+    </script>
+  </head>
+  <body>
+    <div id="map"></div>
+  </body>
+</html>
